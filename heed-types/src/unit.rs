@@ -1,19 +1,19 @@
 use std::convert::Infallible;
 use std::{error, fmt};
 
-use heed_traits::{BoxedError, BytesDecode, ToBytes};
+use heed_traits::{BoxedError, BytesDecode, BytesEncode};
 
 /// Describes the unit `()` type.
 pub enum Unit {}
 
-impl ToBytes<'_> for Unit {
-    type SelfType = ();
+impl BytesEncode<'_> for Unit {
+    type EItem = ();
 
     type ReturnBytes = [u8; 0];
 
     type Error = Infallible;
 
-    fn to_bytes(&(): &Self::SelfType) -> Result<Self::ReturnBytes, Self::Error> {
+    fn bytes_encode(&(): &Self::EItem) -> Result<Self::ReturnBytes, Self::Error> {
         Ok([])
     }
 }

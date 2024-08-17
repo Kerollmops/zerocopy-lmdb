@@ -3,19 +3,19 @@ use std::marker::PhantomData;
 use std::mem::size_of;
 
 use byteorder::{ByteOrder, ReadBytesExt};
-use heed_traits::{BoxedError, BytesDecode, ToBytes};
+use heed_traits::{BoxedError, BytesDecode, BytesEncode};
 
 /// Encodable version of [`u8`].
 pub struct U8;
 
-impl ToBytes<'_> for U8 {
-    type SelfType = u8;
+impl BytesEncode<'_> for U8 {
+    type EItem = u8;
 
     type ReturnBytes = [u8; 1];
 
     type Error = Infallible;
 
-    fn to_bytes(item: &Self::SelfType) -> Result<Self::ReturnBytes, Self::Error> {
+    fn bytes_encode(item: &Self::EItem) -> Result<Self::ReturnBytes, Self::Error> {
         Ok([*item])
     }
 }
@@ -31,14 +31,14 @@ impl BytesDecode<'_> for U8 {
 /// Encodable version of [`i8`].
 pub struct I8;
 
-impl ToBytes<'_> for I8 {
-    type SelfType = i8;
+impl BytesEncode<'_> for I8 {
+    type EItem = i8;
 
     type ReturnBytes = [u8; 1];
 
     type Error = Infallible;
 
-    fn to_bytes(item: &Self::SelfType) -> Result<Self::ReturnBytes, Self::Error> {
+    fn bytes_encode(item: &Self::EItem) -> Result<Self::ReturnBytes, Self::Error> {
         Ok([*item as u8])
     }
 }
@@ -59,14 +59,14 @@ macro_rules! define_type {
 
         pub struct $name<O>(PhantomData<O>);
 
-        impl<O: ByteOrder> ToBytes<'_> for $name<O> {
-            type SelfType = $native;
+        impl<O: ByteOrder> BytesEncode<'_> for $name<O> {
+            type EItem = $native;
 
             type ReturnBytes = [u8; size_of::<$native>()];
 
             type Error = Infallible;
 
-            fn to_bytes(item: &Self::SelfType) -> Result<Self::ReturnBytes, Self::Error> {
+            fn bytes_encode(item: &Self::EItem) -> Result<Self::ReturnBytes, Self::Error> {
                 let mut buf = [0; size_of::<$native>()];
                 O::$write_method(&mut buf, *item);
                 Ok(buf)

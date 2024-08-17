@@ -1,7 +1,7 @@
 use std::ops::{Bound, RangeBounds};
 use std::{any, fmt, marker, mem, ptr};
 
-use heed_traits::{Comparator, LexicographicComparator, ToBytes};
+use heed_traits::{BytesEncode, Comparator, LexicographicComparator};
 use types::{DecodeIgnore, LazyDecode};
 
 use crate::cursor::MoveOperation;
@@ -338,18 +338,14 @@ impl<KC, DC, C> Database<KC, DC, C> {
     /// wtxn.commit()?;
     /// # Ok(()) }
     /// ```
-    pub fn get<'a, 'txn>(
-        &self,
-        txn: &'txn RoTxn,
-        key: &'a KC::SelfType,
-    ) -> Result<Option<DC::DItem>>
+    pub fn get<'a, 'txn>(&self, txn: &'txn RoTxn, key: &'a KC::EItem) -> Result<Option<DC::DItem>>
     where
-        KC: ToBytes<'a>,
+        KC: BytesEncode<'a>,
         DC: BytesDecode<'txn>,
     {
         assert_eq_env_db_txn!(self, txn);
 
-        let key_bytes = KC::to_bytes(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
 
         let mut key_val = unsafe { crate::into_val(key_bytes.as_ref()) };
         let mut data_val = mem::MaybeUninit::uninit();
@@ -424,15 +420,15 @@ impl<KC, DC, C> Database<KC, DC, C> {
     pub fn get_duplicates<'a, 'txn>(
         &self,
         txn: &'txn RoTxn,
-        key: &'a KC::SelfType,
+        key: &'a KC::EItem,
     ) -> Result<Option<RoIter<'txn, KC, DC, MoveOnCurrentKeyDuplicates>>>
     where
-        KC: ToBytes<'a>,
+        KC: BytesEncode<'a>,
     {
         assert_eq_env_db_txn!(self, txn);
 
         let mut cursor = RoCursor::new(txn, self.dbi)?;
-        let key_bytes = KC::to_bytes(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
         if cursor.move_on_key(key_bytes.as_ref())? {
             Ok(Some(RoIter::new(cursor)))
         } else {
@@ -487,16 +483,16 @@ impl<KC, DC, C> Database<KC, DC, C> {
     pub fn get_lower_than<'a, 'txn>(
         &self,
         txn: &'txn RoTxn,
-        key: &'a KC::SelfType,
+        key: &'a KC::EItem,
     ) -> Result<Option<(KC::DItem, DC::DItem)>>
     where
-        KC: ToBytes<'a> + BytesDecode<'txn>,
+        KC: BytesEncode<'a> + BytesDecode<'txn>,
         DC: BytesDecode<'txn>,
     {
         assert_eq_env_db_txn!(self, txn);
 
         let mut cursor = RoCursor::new(txn, self.dbi)?;
-        let key_bytes = KC::to_bytes(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
         cursor.move_on_key_greater_than_or_equal_to(key_bytes.as_ref())?;
 
         match cursor.move_on_prev(MoveOperation::NoDup) {
@@ -556,16 +552,16 @@ impl<KC, DC, C> Database<KC, DC, C> {
     pub fn get_lower_than_or_equal_to<'a, 'txn>(
         &self,
         txn: &'txn RoTxn,
-        key: &'a KC::SelfType,
+        key: &'a KC::EItem,
     ) -> Result<Option<(KC::DItem, DC::DItem)>>
     where
-        KC: ToBytes<'a> + BytesDecode<'txn>,
+        KC: BytesEncode<'a> + BytesDecode<'txn>,
         DC: BytesDecode<'txn>,
     {
         assert_eq_env_db_txn!(self, txn);
 
         let mut cursor = RoCursor::new(txn, self.dbi)?;
-        let key_bytes = KC::to_bytes(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
         let key_bytes = key_bytes.as_ref();
         let result = match cursor.move_on_key_greater_than_or_equal_to(key_bytes) {
             Ok(Some((key, data))) if key == key_bytes => Ok(Some((key, data))),
@@ -630,16 +626,16 @@ impl<KC, DC, C> Database<KC, DC, C> {
     pub fn get_greater_than<'a, 'txn>(
         &self,
         txn: &'txn RoTxn,
-        key: &'a KC::SelfType,
+        key: &'a KC::EItem,
     ) -> Result<Option<(KC::DItem, DC::DItem)>>
     where
-        KC: ToBytes<'a> + BytesDecode<'txn>,
+        KC: BytesEncode<'a> + BytesDecode<'txn>,
         DC: BytesDecode<'txn>,
     {
         assert_eq_env_db_txn!(self, txn);
 
         let mut cursor = RoCursor::new(txn, self.dbi)?;
-        let key_bytes = KC::to_bytes(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
         let key_bytes = key_bytes.as_ref();
         let entry = match cursor.move_on_key_greater_than_or_equal_to(key_bytes)? {
             Some((key, data)) if key > key_bytes => Some((key, data)),
@@ -703,16 +699,16 @@ impl<KC, DC, C> Database<KC, DC, C> {
     pub fn get_greater_than_or_equal_to<'a, 'txn>(
         &self,
         txn: &'txn RoTxn,
-        key: &'a KC::SelfType,
+        key: &'a KC::EItem,
     ) -> Result<Option<(KC::DItem, DC::DItem)>>
     where
-        KC: ToBytes<'a> + BytesDecode<'txn>,
+        KC: BytesEncode<'a> + BytesDecode<'txn>,
         DC: BytesDecode<'txn>,
     {
         assert_eq_env_db_txn!(self, txn);
 
         let mut cursor = RoCursor::new(txn, self.dbi)?;
-        let key_bytes = KC::to_bytes(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
         match cursor.move_on_key_greater_than_or_equal_to(key_bytes.as_ref()) {
             Ok(Some((key, data))) => match (KC::bytes_decode(key), DC::bytes_decode(data)) {
                 (Ok(key), Ok(data)) => Ok(Some((key, data))),
@@ -1230,19 +1226,21 @@ impl<KC, DC, C> Database<KC, DC, C> {
         range: &'a R,
     ) -> Result<RoRange<'txn, KC, DC>>
     where
-        KC: ToBytes<'a>,
-        R: RangeBounds<KC::SelfType>,
+        KC: BytesEncode<'a>,
+        R: RangeBounds<KC::EItem>,
     {
         assert_eq_env_db_txn!(self, txn);
 
         // TODO optimize, this might do unnecessary allocations on types that are already 'static
         let start_bound = match range.start_bound() {
             Bound::Included(bound) => {
-                let bytes = KC::to_bytes(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
+                let bytes =
+                    KC::bytes_encode(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
                 Bound::Included(bytes.into())
             }
             Bound::Excluded(bound) => {
-                let bytes = KC::to_bytes(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
+                let bytes =
+                    KC::bytes_encode(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
                 Bound::Excluded(bytes.into())
             }
             Bound::Unbounded => Bound::Unbounded,
@@ -1250,11 +1248,13 @@ impl<KC, DC, C> Database<KC, DC, C> {
 
         let end_bound = match range.end_bound() {
             Bound::Included(bound) => {
-                let bytes = KC::to_bytes(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
+                let bytes =
+                    KC::bytes_encode(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
                 Bound::Included(bytes.into())
             }
             Bound::Excluded(bound) => {
-                let bytes = KC::to_bytes(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
+                let bytes =
+                    KC::bytes_encode(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
                 Bound::Excluded(bytes.into())
             }
             Bound::Unbounded => Bound::Unbounded,
@@ -1323,19 +1323,21 @@ impl<KC, DC, C> Database<KC, DC, C> {
         range: &'a R,
     ) -> Result<RwRange<'txn, KC, DC>>
     where
-        KC: ToBytes<'a>,
-        R: RangeBounds<KC::SelfType>,
+        KC: BytesEncode<'a>,
+        R: RangeBounds<KC::EItem>,
     {
         assert_eq_env_db_txn!(self, txn);
 
         // TODO optimize, this might do unnecessary allocations on types that are already 'static
         let start_bound = match range.start_bound() {
             Bound::Included(bound) => {
-                let bytes = KC::to_bytes(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
+                let bytes =
+                    KC::bytes_encode(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
                 Bound::Included(bytes.into())
             }
             Bound::Excluded(bound) => {
-                let bytes = KC::to_bytes(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
+                let bytes =
+                    KC::bytes_encode(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
                 Bound::Excluded(bytes.into())
             }
             Bound::Unbounded => Bound::Unbounded,
@@ -1343,11 +1345,13 @@ impl<KC, DC, C> Database<KC, DC, C> {
 
         let end_bound = match range.end_bound() {
             Bound::Included(bound) => {
-                let bytes = KC::to_bytes(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
+                let bytes =
+                    KC::bytes_encode(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
                 Bound::Included(bytes.into())
             }
             Bound::Excluded(bound) => {
-                let bytes = KC::to_bytes(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
+                let bytes =
+                    KC::bytes_encode(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
                 Bound::Excluded(bytes.into())
             }
             Bound::Unbounded => Bound::Unbounded,
@@ -1406,19 +1410,21 @@ impl<KC, DC, C> Database<KC, DC, C> {
         range: &'a R,
     ) -> Result<RoRevRange<'txn, KC, DC>>
     where
-        KC: ToBytes<'a>,
-        R: RangeBounds<KC::SelfType>,
+        KC: BytesEncode<'a>,
+        R: RangeBounds<KC::EItem>,
     {
         assert_eq_env_db_txn!(self, txn);
 
         // TODO optimize, this might do unnecessary allocations on types that are already 'static
         let start_bound = match range.start_bound() {
             Bound::Included(bound) => {
-                let bytes = KC::to_bytes(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
+                let bytes =
+                    KC::bytes_encode(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
                 Bound::Included(bytes.into())
             }
             Bound::Excluded(bound) => {
-                let bytes = KC::to_bytes(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
+                let bytes =
+                    KC::bytes_encode(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
                 Bound::Excluded(bytes.into())
             }
             Bound::Unbounded => Bound::Unbounded,
@@ -1426,11 +1432,13 @@ impl<KC, DC, C> Database<KC, DC, C> {
 
         let end_bound = match range.end_bound() {
             Bound::Included(bound) => {
-                let bytes = KC::to_bytes(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
+                let bytes =
+                    KC::bytes_encode(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
                 Bound::Included(bytes.into())
             }
             Bound::Excluded(bound) => {
-                let bytes = KC::to_bytes(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
+                let bytes =
+                    KC::bytes_encode(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
                 Bound::Excluded(bytes.into())
             }
             Bound::Unbounded => Bound::Unbounded,
@@ -1499,19 +1507,21 @@ impl<KC, DC, C> Database<KC, DC, C> {
         range: &'a R,
     ) -> Result<RwRevRange<'txn, KC, DC>>
     where
-        KC: ToBytes<'a>,
-        R: RangeBounds<KC::SelfType>,
+        KC: BytesEncode<'a>,
+        R: RangeBounds<KC::EItem>,
     {
         assert_eq_env_db_txn!(self, txn);
 
         // TODO optimize, this might do unnecessary allocations on types that are already 'static
         let start_bound = match range.start_bound() {
             Bound::Included(bound) => {
-                let bytes = KC::to_bytes(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
+                let bytes =
+                    KC::bytes_encode(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
                 Bound::Included(bytes.into())
             }
             Bound::Excluded(bound) => {
-                let bytes = KC::to_bytes(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
+                let bytes =
+                    KC::bytes_encode(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
                 Bound::Excluded(bytes.into())
             }
             Bound::Unbounded => Bound::Unbounded,
@@ -1519,11 +1529,13 @@ impl<KC, DC, C> Database<KC, DC, C> {
 
         let end_bound = match range.end_bound() {
             Bound::Included(bound) => {
-                let bytes = KC::to_bytes(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
+                let bytes =
+                    KC::bytes_encode(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
                 Bound::Included(bytes.into())
             }
             Bound::Excluded(bound) => {
-                let bytes = KC::to_bytes(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
+                let bytes =
+                    KC::bytes_encode(bound).map_err(|err| Error::Encoding(Box::new(err)))?;
                 Bound::Excluded(bytes.into())
             }
             Bound::Unbounded => Bound::Unbounded,
@@ -1580,15 +1592,16 @@ impl<KC, DC, C> Database<KC, DC, C> {
     pub fn prefix_iter<'a, 'txn>(
         &self,
         txn: &'txn RoTxn,
-        prefix: &'a KC::SelfType,
+        prefix: &'a KC::EItem,
     ) -> Result<RoPrefix<'txn, KC, DC, C>>
     where
-        KC: ToBytes<'a>,
+        KC: BytesEncode<'a>,
         C: LexicographicComparator,
     {
         assert_eq_env_db_txn!(self, txn);
 
-        let prefix_bytes = KC::to_bytes(prefix).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let prefix_bytes =
+            KC::bytes_encode(prefix).map_err(|err| Error::Encoding(Box::new(err)))?;
         // TODO optimize, this might do unnecessary allocations on types that are already 'static
         let prefix_bytes = prefix_bytes.into();
         RoCursor::new(txn, self.dbi).map(|cursor| RoPrefix::new(cursor, prefix_bytes))
@@ -1652,15 +1665,16 @@ impl<KC, DC, C> Database<KC, DC, C> {
     pub fn prefix_iter_mut<'a, 'txn>(
         &self,
         txn: &'txn mut RwTxn,
-        prefix: &'a KC::SelfType,
+        prefix: &'a KC::EItem,
     ) -> Result<RwPrefix<'txn, KC, DC, C>>
     where
-        KC: ToBytes<'a>,
+        KC: BytesEncode<'a>,
         C: LexicographicComparator,
     {
         assert_eq_env_db_txn!(self, txn);
 
-        let prefix_bytes = KC::to_bytes(prefix).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let prefix_bytes =
+            KC::bytes_encode(prefix).map_err(|err| Error::Encoding(Box::new(err)))?;
         // TODO optimize, this might do unnecessary allocations on types that are already 'static
         let prefix_bytes = prefix_bytes.into();
         RwCursor::new(txn, self.dbi).map(|cursor| RwPrefix::new(cursor, prefix_bytes))
@@ -1714,15 +1728,16 @@ impl<KC, DC, C> Database<KC, DC, C> {
     pub fn rev_prefix_iter<'a, 'txn>(
         &self,
         txn: &'txn RoTxn,
-        prefix: &'a KC::SelfType,
+        prefix: &'a KC::EItem,
     ) -> Result<RoRevPrefix<'txn, KC, DC, C>>
     where
-        KC: ToBytes<'a>,
+        KC: BytesEncode<'a>,
         C: LexicographicComparator,
     {
         assert_eq_env_db_txn!(self, txn);
 
-        let prefix_bytes = KC::to_bytes(prefix).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let prefix_bytes =
+            KC::bytes_encode(prefix).map_err(|err| Error::Encoding(Box::new(err)))?;
         // TODO optimize, this might do unnecessary allocations on types that are already 'static
         let prefix_bytes = prefix_bytes.into();
         RoCursor::new(txn, self.dbi).map(|cursor| RoRevPrefix::new(cursor, prefix_bytes))
@@ -1786,15 +1801,16 @@ impl<KC, DC, C> Database<KC, DC, C> {
     pub fn rev_prefix_iter_mut<'a, 'txn>(
         &self,
         txn: &'txn mut RwTxn,
-        prefix: &'a KC::SelfType,
+        prefix: &'a KC::EItem,
     ) -> Result<RwRevPrefix<'txn, KC, DC, C>>
     where
-        KC: ToBytes<'a>,
+        KC: BytesEncode<'a>,
         C: LexicographicComparator,
     {
         assert_eq_env_db_txn!(self, txn);
 
-        let prefix_bytes = KC::to_bytes(prefix).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let prefix_bytes =
+            KC::bytes_encode(prefix).map_err(|err| Error::Encoding(Box::new(err)))?;
         // TODO optimize, this might do unnecessary allocations on types that are already 'static
         let prefix_bytes = prefix_bytes.into();
         RwCursor::new(txn, self.dbi).map(|cursor| RwRevPrefix::new(cursor, prefix_bytes))
@@ -1835,20 +1851,15 @@ impl<KC, DC, C> Database<KC, DC, C> {
     /// wtxn.commit()?;
     /// # Ok(()) }
     /// ```
-    pub fn put<'a>(
-        &self,
-        txn: &mut RwTxn,
-        key: &'a KC::SelfType,
-        data: &'a DC::SelfType,
-    ) -> Result<()>
+    pub fn put<'a>(&self, txn: &mut RwTxn, key: &'a KC::EItem, data: &'a DC::EItem) -> Result<()>
     where
-        KC: ToBytes<'a>,
-        DC: ToBytes<'a>,
+        KC: BytesEncode<'a>,
+        DC: BytesEncode<'a>,
     {
         assert_eq_env_db_txn!(self, txn);
 
-        let key_bytes = KC::to_bytes(key).map_err(|err| Error::Encoding(Box::new(err)))?;
-        let data_bytes = DC::to_bytes(data).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let data_bytes = DC::bytes_encode(data).map_err(|err| Error::Encoding(Box::new(err)))?;
 
         let mut key_val = unsafe { crate::into_val(key_bytes.as_ref()) };
         let mut data_val = unsafe { crate::into_val(data_bytes.as_ref()) };
@@ -1900,17 +1911,17 @@ impl<KC, DC, C> Database<KC, DC, C> {
     pub fn put_reserved<'a, F>(
         &self,
         txn: &mut RwTxn,
-        key: &'a KC::SelfType,
+        key: &'a KC::EItem,
         data_size: usize,
         write_func: F,
     ) -> Result<()>
     where
-        KC: ToBytes<'a>,
+        KC: BytesEncode<'a>,
         F: FnOnce(&mut ReservedSpace) -> io::Result<()>,
     {
         assert_eq_env_db_txn!(self, txn);
 
-        let key_bytes = KC::to_bytes(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
         let mut key_val = unsafe { crate::into_val(key_bytes.as_ref()) };
         let mut reserved = ffi::reserve_size_val(data_size);
         let flags = ffi::MDB_RESERVE;
@@ -1991,17 +2002,17 @@ impl<KC, DC, C> Database<KC, DC, C> {
         &self,
         txn: &mut RwTxn,
         flags: PutFlags,
-        key: &'a KC::SelfType,
-        data: &'a DC::SelfType,
+        key: &'a KC::EItem,
+        data: &'a DC::EItem,
     ) -> Result<()>
     where
-        KC: ToBytes<'a>,
-        DC: ToBytes<'a>,
+        KC: BytesEncode<'a>,
+        DC: BytesEncode<'a>,
     {
         assert_eq_env_db_txn!(self, txn);
 
-        let key_bytes = KC::to_bytes(key).map_err(|err| Error::Encoding(Box::new(err)))?;
-        let data_bytes = DC::to_bytes(data).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let data_bytes = DC::bytes_encode(data).map_err(|err| Error::Encoding(Box::new(err)))?;
 
         let mut key_val = unsafe { crate::into_val(key_bytes.as_ref()) };
         let mut data_val = unsafe { crate::into_val(data_bytes.as_ref()) };
@@ -2050,12 +2061,12 @@ impl<KC, DC, C> Database<KC, DC, C> {
     pub fn get_or_put<'a, 'txn>(
         &'txn self,
         txn: &mut RwTxn,
-        key: &'a KC::SelfType,
-        data: &'a DC::SelfType,
+        key: &'a KC::EItem,
+        data: &'a DC::EItem,
     ) -> Result<Option<DC::DItem>>
     where
-        KC: ToBytes<'a>,
-        DC: ToBytes<'a> + BytesDecode<'a>,
+        KC: BytesEncode<'a>,
+        DC: BytesEncode<'a> + BytesDecode<'a>,
     {
         self.get_or_put_with_flags(txn, PutFlags::empty(), key, data)
     }
@@ -2098,17 +2109,17 @@ impl<KC, DC, C> Database<KC, DC, C> {
         &'txn self,
         txn: &mut RwTxn,
         flags: PutFlags,
-        key: &'a KC::SelfType,
-        data: &'a DC::SelfType,
+        key: &'a KC::EItem,
+        data: &'a DC::EItem,
     ) -> Result<Option<DC::DItem>>
     where
-        KC: ToBytes<'a>,
-        DC: ToBytes<'a> + BytesDecode<'a>,
+        KC: BytesEncode<'a>,
+        DC: BytesEncode<'a> + BytesDecode<'a>,
     {
         assert_eq_env_db_txn!(self, txn);
 
-        let key_bytes = KC::to_bytes(key).map_err(|err| Error::Encoding(Box::new(err)))?;
-        let data_bytes = DC::to_bytes(data).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let data_bytes = DC::bytes_encode(data).map_err(|err| Error::Encoding(Box::new(err)))?;
 
         let mut key_val = unsafe { crate::into_val(key_bytes.as_ref()) };
         let mut data_val = unsafe { crate::into_val(data_bytes.as_ref()) };
@@ -2182,12 +2193,12 @@ impl<KC, DC, C> Database<KC, DC, C> {
     pub fn get_or_put_reserved<'a, 'txn, F>(
         &'txn self,
         txn: &mut RwTxn,
-        key: &'a KC::SelfType,
+        key: &'a KC::EItem,
         data_size: usize,
         write_func: F,
     ) -> Result<Option<DC::DItem>>
     where
-        KC: ToBytes<'a>,
+        KC: BytesEncode<'a>,
         F: FnOnce(&mut ReservedSpace) -> io::Result<()>,
         DC: BytesDecode<'a>,
     {
@@ -2247,18 +2258,18 @@ impl<KC, DC, C> Database<KC, DC, C> {
         &'txn self,
         txn: &mut RwTxn,
         flags: PutFlags,
-        key: &'a KC::SelfType,
+        key: &'a KC::EItem,
         data_size: usize,
         write_func: F,
     ) -> Result<Option<DC::DItem>>
     where
-        KC: ToBytes<'a>,
+        KC: BytesEncode<'a>,
         F: FnOnce(&mut ReservedSpace) -> io::Result<()>,
         DC: BytesDecode<'a>,
     {
         assert_eq_env_db_txn!(self, txn);
 
-        let key_bytes = KC::to_bytes(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
 
         let mut key_val = unsafe { crate::into_val(key_bytes.as_ref()) };
         let mut reserved = ffi::reserve_size_val(data_size);
@@ -2332,13 +2343,13 @@ impl<KC, DC, C> Database<KC, DC, C> {
     /// wtxn.commit()?;
     /// # Ok(()) }
     /// ```
-    pub fn delete<'a>(&self, txn: &mut RwTxn, key: &'a KC::SelfType) -> Result<bool>
+    pub fn delete<'a>(&self, txn: &mut RwTxn, key: &'a KC::EItem) -> Result<bool>
     where
-        KC: ToBytes<'a>,
+        KC: BytesEncode<'a>,
     {
         assert_eq_env_db_txn!(self, txn);
 
-        let key_bytes = KC::to_bytes(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
         let mut key_val = unsafe { crate::into_val(key_bytes.as_ref()) };
 
         let result = unsafe {
@@ -2414,17 +2425,17 @@ impl<KC, DC, C> Database<KC, DC, C> {
     pub fn delete_one_duplicate<'a>(
         &self,
         txn: &mut RwTxn,
-        key: &'a KC::SelfType,
-        data: &'a DC::SelfType,
+        key: &'a KC::EItem,
+        data: &'a DC::EItem,
     ) -> Result<bool>
     where
-        KC: ToBytes<'a>,
-        DC: ToBytes<'a>,
+        KC: BytesEncode<'a>,
+        DC: BytesEncode<'a>,
     {
         assert_eq_env_db_txn!(self, txn);
 
-        let key_bytes = KC::to_bytes(key).map_err(|err| Error::Encoding(Box::new(err)))?;
-        let data_bytes = DC::to_bytes(data).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let data_bytes = DC::bytes_encode(data).map_err(|err| Error::Encoding(Box::new(err)))?;
         let mut key_val = unsafe { crate::into_val(key_bytes.as_ref()) };
         let mut data_val = unsafe { crate::into_val(data_bytes.as_ref()) };
 
@@ -2489,8 +2500,8 @@ impl<KC, DC, C> Database<KC, DC, C> {
     /// ```
     pub fn delete_range<'a, 'txn, R>(&self, txn: &'txn mut RwTxn, range: &'a R) -> Result<usize>
     where
-        KC: ToBytes<'a> + BytesDecode<'txn>,
-        R: RangeBounds<KC::SelfType>,
+        KC: BytesEncode<'a> + BytesDecode<'txn>,
+        R: RangeBounds<KC::EItem>,
     {
         assert_eq_env_db_txn!(self, txn);
 

@@ -1,6 +1,6 @@
 use std::convert::Infallible;
 
-use heed_traits::{BoxedError, BytesDecode, ToBytes};
+use heed_traits::{BoxedError, BytesDecode, BytesEncode};
 
 /// Describes a byte slice `[u8]` that is totally borrowed and doesn't depend on
 /// any [memory alignment].
@@ -8,14 +8,14 @@ use heed_traits::{BoxedError, BytesDecode, ToBytes};
 /// [memory alignment]: std::mem::align_of()
 pub enum Bytes {}
 
-impl<'a> ToBytes<'a> for Bytes {
-    type SelfType = [u8];
+impl<'a> BytesEncode<'a> for Bytes {
+    type EItem = [u8];
 
     type ReturnBytes = &'a [u8];
 
     type Error = Infallible;
 
-    fn to_bytes(item: &'a Self::SelfType) -> Result<Self::ReturnBytes, Self::Error> {
+    fn bytes_encode(item: &'a Self::EItem) -> Result<Self::ReturnBytes, Self::Error> {
         Ok(item)
     }
 }
@@ -31,14 +31,14 @@ impl<'a> BytesDecode<'a> for Bytes {
 /// Like [`Bytes`], but always contains exactly `N` (the generic parameter) bytes.
 pub enum FixedSizeBytes<const N: usize> {}
 
-impl<'a, const N: usize> ToBytes<'a> for FixedSizeBytes<N> {
-    type SelfType = [u8; N];
+impl<'a, const N: usize> BytesEncode<'a> for FixedSizeBytes<N> {
+    type EItem = [u8; N];
 
     type ReturnBytes = [u8; N]; // TODO &'a [u8; N] or [u8; N]
 
     type Error = Infallible;
 
-    fn to_bytes(item: &'a Self::SelfType) -> Result<Self::ReturnBytes, Self::Error> {
+    fn bytes_encode(item: &'a Self::EItem) -> Result<Self::ReturnBytes, Self::Error> {
         Ok(*item)
     }
 }

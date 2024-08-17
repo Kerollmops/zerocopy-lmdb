@@ -146,14 +146,13 @@
 //! to create codecs to encode prefixes when possible instead of using a slice of bytes.
 //!
 //! ```
-//! use std::borrow::Cow;
 //! use std::convert::Infallible;
 //! use std::error::Error;
 //! use std::fs;
 //! use std::path::Path;
 //!
 //! use heed::types::*;
-//! use heed::{BoxedError, BytesDecode, ToBytes, Database, EnvOpenOptions};
+//! use heed::{BoxedError, BytesDecode, BytesEncode, Database, EnvOpenOptions};
 //!
 //! #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 //! pub enum Level {
@@ -170,15 +169,15 @@
 //!
 //! pub struct LogKeyCodec;
 //!
-//! impl<'a> ToBytes<'a> for LogKeyCodec {
-//!     type SelfType = LogKey;
+//! impl<'a> BytesEncode<'a> for LogKeyCodec {
+//!     type EItem = LogKey;
 //!
 //!     type ReturnBytes = [u8; 5];
 //!
 //!     type Error = Infallible;
 //!
 //!     /// Encodes the u32 timestamp in big endian followed by the log level with a single byte.
-//!     fn to_bytes(log: &'a Self::SelfType) -> Result<Self::ReturnBytes, Self::Error> {
+//!     fn bytes_encode(log: &Self::EItem) -> Result<Self::ReturnBytes, Self::Error> {
 //!         let mut output = [0; 5];
 //!
 //!         let [timestamp @ .., level] = &mut output;
@@ -218,15 +217,15 @@
 //! /// the logs that appeared during a, rather long, period.
 //! pub struct LogAtHalfTimestampCodec;
 //!
-//! impl<'a> ToBytes<'a> for LogAtHalfTimestampCodec {
-//!     type SelfType = u32;
+//! impl<'a> BytesEncode<'a> for LogAtHalfTimestampCodec {
+//!     type EItem = u32;
 //!
 //!     type ReturnBytes = [u8; 2];
 //!
 //!     type Error = Infallible;
 //!
 //!     /// This method encodes only the prefix of the keys in this particular case, the timestamp.
-//!     fn to_bytes(half_timestamp: &'a Self::SelfType) -> Result<Self::ReturnBytes, Self::Error> {
+//!     fn bytes_encode(half_timestamp: &Self::EItem) -> Result<Self::ReturnBytes, Self::Error> {
 //!         let [bytes @ .., _, _] = half_timestamp.to_be_bytes();
 //!         Ok(bytes)
 //!     }
@@ -457,4 +456,4 @@
 // To let cargo generate doc links
 #![allow(unused_imports)]
 
-use crate::{BytesDecode, Database, EnvOpenOptions, ToBytes};
+use crate::{BytesDecode, BytesEncode, Database, EnvOpenOptions};

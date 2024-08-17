@@ -257,15 +257,15 @@ impl<'txn, KC, DC, C, IM> RwPrefix<'txn, KC, DC, C, IM> {
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
     pub unsafe fn put_current<'a>(
         &mut self,
-        key: &'a KC::SelfType,
-        data: &'a DC::SelfType,
+        key: &'a KC::EItem,
+        data: &'a DC::EItem,
     ) -> Result<bool>
     where
-        KC: ToBytes<'a>,
-        DC: ToBytes<'a>,
+        KC: BytesEncode<'a>,
+        DC: BytesEncode<'a>,
     {
-        let key_bytes = KC::to_bytes(key).map_err(|err| Error::Encoding(Box::new(err)))?;
-        let data_bytes = DC::to_bytes(data).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let data_bytes = DC::bytes_encode(data).map_err(|err| Error::Encoding(Box::new(err)))?;
         self.cursor.put_current(key_bytes.as_ref(), data_bytes.as_ref())
     }
 
@@ -285,15 +285,15 @@ impl<'txn, KC, DC, C, IM> RwPrefix<'txn, KC, DC, C, IM> {
     pub unsafe fn put_current_reserved_with_flags<'a, F>(
         &mut self,
         flags: PutFlags,
-        key: &'a KC::SelfType,
+        key: &'a KC::EItem,
         data_size: usize,
         write_func: F,
     ) -> Result<bool>
     where
-        KC: ToBytes<'a>,
+        KC: BytesEncode<'a>,
         F: FnOnce(&mut ReservedSpace) -> io::Result<()>,
     {
-        let key_bytes = KC::to_bytes(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
         self.cursor.put_current_reserved_with_flags(
             flags,
             key_bytes.as_ref(),
@@ -322,15 +322,15 @@ impl<'txn, KC, DC, C, IM> RwPrefix<'txn, KC, DC, C, IM> {
     pub unsafe fn put_current_with_options<'a, NDC>(
         &mut self,
         flags: PutFlags,
-        key: &'a KC::SelfType,
-        data: &'a NDC::SelfType,
+        key: &'a KC::EItem,
+        data: &'a NDC::EItem,
     ) -> Result<()>
     where
-        KC: ToBytes<'a>,
-        NDC: ToBytes<'a>,
+        KC: BytesEncode<'a>,
+        NDC: BytesEncode<'a>,
     {
-        let key_bytes = KC::to_bytes(key).map_err(|err| Error::Encoding(Box::new(err)))?;
-        let data_bytes = NDC::to_bytes(data).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let data_bytes = NDC::bytes_encode(data).map_err(|err| Error::Encoding(Box::new(err)))?;
         self.cursor.put_current_with_flags(flags, key_bytes.as_ref(), data_bytes.as_ref())
     }
 
@@ -652,15 +652,15 @@ impl<'txn, KC, DC, C, IM> RwRevPrefix<'txn, KC, DC, C, IM> {
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
     pub unsafe fn put_current<'a>(
         &mut self,
-        key: &'a KC::SelfType,
-        data: &'a DC::SelfType,
+        key: &'a KC::EItem,
+        data: &'a DC::EItem,
     ) -> Result<bool>
     where
-        KC: ToBytes<'a>,
-        DC: ToBytes<'a>,
+        KC: BytesEncode<'a>,
+        DC: BytesEncode<'a>,
     {
-        let key_bytes = KC::to_bytes(key).map_err(|err| Error::Encoding(Box::new(err)))?;
-        let data_bytes = DC::to_bytes(data).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let data_bytes = DC::bytes_encode(data).map_err(|err| Error::Encoding(Box::new(err)))?;
         self.cursor.put_current(key_bytes.as_ref(), data_bytes.as_ref())
     }
 
@@ -680,15 +680,15 @@ impl<'txn, KC, DC, C, IM> RwRevPrefix<'txn, KC, DC, C, IM> {
     pub unsafe fn put_current_reserved_with_flags<'a, F>(
         &mut self,
         flags: PutFlags,
-        key: &'a KC::SelfType,
+        key: &'a KC::EItem,
         data_size: usize,
         write_func: F,
     ) -> Result<bool>
     where
-        KC: ToBytes<'a>,
+        KC: BytesEncode<'a>,
         F: FnOnce(&mut ReservedSpace) -> io::Result<()>,
     {
-        let key_bytes = KC::to_bytes(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
         self.cursor.put_current_reserved_with_flags(
             flags,
             key_bytes.as_ref(),
@@ -717,15 +717,15 @@ impl<'txn, KC, DC, C, IM> RwRevPrefix<'txn, KC, DC, C, IM> {
     pub unsafe fn put_current_with_options<'a, NDC>(
         &mut self,
         flags: PutFlags,
-        key: &'a KC::SelfType,
-        data: &'a NDC::SelfType,
+        key: &'a KC::EItem,
+        data: &'a NDC::EItem,
     ) -> Result<()>
     where
-        KC: ToBytes<'a>,
-        NDC: ToBytes<'a>,
+        KC: BytesEncode<'a>,
+        NDC: BytesEncode<'a>,
     {
-        let key_bytes = KC::to_bytes(key).map_err(|err| Error::Encoding(Box::new(err)))?;
-        let data_bytes = NDC::to_bytes(data).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let data_bytes = NDC::bytes_encode(data).map_err(|err| Error::Encoding(Box::new(err)))?;
         self.cursor.put_current_with_flags(flags, key_bytes.as_ref(), data_bytes.as_ref())
     }
 

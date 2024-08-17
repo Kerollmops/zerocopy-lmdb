@@ -16,9 +16,9 @@ use std::error::Error as StdError;
 pub type BoxedError = Box<dyn StdError + Send + Sync + 'static>;
 
 /// A trait that represents an encoding structure.
-pub trait ToBytes<'a> {
-    /// The type to encode to bytes.
-    type SelfType: ?Sized + 'a;
+pub trait BytesEncode<'a> {
+    /// The type to encode.
+    type EItem: ?Sized + 'a;
 
     /// The type containing the encoded bytes.
     type ReturnBytes: Into<Vec<u8>> + AsRef<[u8]> + 'a;
@@ -27,15 +27,15 @@ pub trait ToBytes<'a> {
     type Error: StdError + Send + Sync + 'static;
 
     /// Encode the given item as bytes.
-    fn to_bytes(item: &'a Self::SelfType) -> Result<Self::ReturnBytes, Self::Error>;
+    fn bytes_encode(item: &'a Self::EItem) -> Result<Self::ReturnBytes, Self::Error>;
 
     /// Encode the given item as bytes and write it into the writer. This function by default
-    /// forwards to `to_bytes`.
+    /// forwards to `bytes_encode`.
     fn bytes_encode_into_writer(
-        item: &'a Self::SelfType,
+        item: &'a Self::EItem,
         writer: &mut Vec<u8>,
     ) -> Result<(), Self::Error> {
-        writer.extend_from_slice(Self::to_bytes(item)?.as_ref());
+        writer.extend_from_slice(Self::bytes_encode(item)?.as_ref());
         Ok(())
     }
 }

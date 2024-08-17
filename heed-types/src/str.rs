@@ -1,18 +1,18 @@
 use std::convert::Infallible;
 
-use heed_traits::{BoxedError, BytesDecode, ToBytes};
+use heed_traits::{BoxedError, BytesDecode, BytesEncode};
 
 /// Describes a [`str`].
 pub enum Str {}
 
-impl<'a> ToBytes<'a> for Str {
-    type SelfType = str;
+impl<'a> BytesEncode<'a> for Str {
+    type EItem = str;
 
     type ReturnBytes = &'a [u8];
 
     type Error = Infallible;
 
-    fn to_bytes(item: &'a Self::SelfType) -> Result<Self::ReturnBytes, Self::Error> {
+    fn bytes_encode(item: &'a Self::EItem) -> Result<Self::ReturnBytes, Self::Error> {
         Ok(item.as_bytes())
     }
 }

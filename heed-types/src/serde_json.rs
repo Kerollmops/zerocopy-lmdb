@@ -1,4 +1,4 @@
-use heed_traits::{BoxedError, BytesDecode, ToBytes};
+use heed_traits::{BoxedError, BytesDecode, BytesEncode};
 use serde::{Deserialize, Serialize};
 
 /// Describes a type that is [`Serialize`]/[`Deserialize`] and uses `serde_json` to do so.
@@ -6,17 +6,17 @@ use serde::{Deserialize, Serialize};
 /// It can borrow bytes from the original slice.
 pub struct SerdeJson<T>(std::marker::PhantomData<T>);
 
-impl<'a, T: 'a> ToBytes<'a> for SerdeJson<T>
+impl<'a, T: 'a> BytesEncode<'a> for SerdeJson<T>
 where
     T: Serialize,
 {
-    type SelfType = T;
+    type EItem = T;
 
     type ReturnBytes = Vec<u8>;
 
     type Error = serde_json::Error;
 
-    fn to_bytes(item: &Self::SelfType) -> Result<Self::ReturnBytes, Self::Error> {
+    fn bytes_encode(item: &Self::EItem) -> Result<Self::ReturnBytes, Self::Error> {
         serde_json::to_vec(item)
     }
 }
