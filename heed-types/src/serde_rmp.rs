@@ -1,6 +1,4 @@
-use std::borrow::Cow;
-
-use heed_traits::{BoxedError, BytesDecode, BytesEncode};
+use heed_traits::{BoxedError, BytesDecode, ToBytes};
 use serde::{Deserialize, Serialize};
 
 /// Describes a type that is [`Serialize`]/[`Deserialize`] and uses `rmp_serde` to do so.
@@ -8,14 +6,18 @@ use serde::{Deserialize, Serialize};
 /// It can borrow bytes from the original slice.
 pub struct SerdeRmp<T>(std::marker::PhantomData<T>);
 
-impl<'a, T: 'a> BytesEncode<'a> for SerdeRmp<T>
+impl<'a, T: 'a> ToBytes<'a> for SerdeRmp<T>
 where
     T: Serialize,
 {
-    type EItem = T;
+    type SelfType = T;
 
-    fn bytes_encode(item: &Self::EItem) -> Result<Cow<[u8]>, BoxedError> {
-        rmp_serde::to_vec(item).map(Cow::Owned).map_err(Into::into)
+    type ReturnBytes = Vec<u8>;
+
+    type Error = rmp_serde::encode::Error;
+
+    fn to_bytes(item: &'a Self::SelfType) -> Result<Self::ReturnBytes, Self::Error> {
+        rmp_serde::to_vec(item)
     }
 }
 

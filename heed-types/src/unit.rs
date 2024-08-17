@@ -1,16 +1,20 @@
-use std::borrow::Cow;
+use std::convert::Infallible;
 use std::{error, fmt};
 
-use heed_traits::{BoxedError, BytesDecode, BytesEncode};
+use heed_traits::{BoxedError, BytesDecode, ToBytes};
 
 /// Describes the unit `()` type.
 pub enum Unit {}
 
-impl BytesEncode<'_> for Unit {
-    type EItem = ();
+impl ToBytes<'_> for Unit {
+    type SelfType = ();
 
-    fn bytes_encode(_item: &Self::EItem) -> Result<Cow<[u8]>, BoxedError> {
-        Ok(Cow::Borrowed(&[]))
+    type ReturnBytes = [u8; 0];
+
+    type Error = Infallible;
+
+    fn to_bytes(_item: &'_ Self::SelfType) -> Result<Self::ReturnBytes, Self::Error> {
+        Ok([])
     }
 }
 

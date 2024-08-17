@@ -1,18 +1,22 @@
-use std::borrow::Cow;
+use std::convert::Infallible;
 use std::marker::PhantomData;
 use std::mem::size_of;
 
 use byteorder::{ByteOrder, ReadBytesExt};
-use heed_traits::{BoxedError, BytesDecode, BytesEncode};
+use heed_traits::{BoxedError, BytesDecode, ToBytes};
 
 /// Encodable version of [`u8`].
 pub struct U8;
 
-impl BytesEncode<'_> for U8 {
-    type EItem = u8;
+impl ToBytes<'_> for U8 {
+    type SelfType = u8;
 
-    fn bytes_encode(item: &Self::EItem) -> Result<Cow<[u8]>, BoxedError> {
-        Ok(Cow::from([*item].to_vec()))
+    type ReturnBytes = [u8; 1];
+
+    type Error = Infallible;
+
+    fn to_bytes(item: &Self::SelfType) -> Result<Self::ReturnBytes, Self::Error> {
+        Ok([*item])
     }
 }
 
@@ -27,11 +31,15 @@ impl BytesDecode<'_> for U8 {
 /// Encodable version of [`i8`].
 pub struct I8;
 
-impl BytesEncode<'_> for I8 {
-    type EItem = i8;
+impl ToBytes<'_> for I8 {
+    type SelfType = i8;
 
-    fn bytes_encode(item: &Self::EItem) -> Result<Cow<[u8]>, BoxedError> {
-        Ok(Cow::from([*item as u8].to_vec()))
+    type ReturnBytes = [u8; 1];
+
+    type Error = Infallible;
+
+    fn to_bytes(item: &Self::SelfType) -> Result<Self::ReturnBytes, Self::Error> {
+        Ok([*item as u8])
     }
 }
 
@@ -51,13 +59,17 @@ macro_rules! define_type {
 
         pub struct $name<O>(PhantomData<O>);
 
-        impl<O: ByteOrder> BytesEncode<'_> for $name<O> {
-            type EItem = $native;
+        impl<O: ByteOrder> ToBytes<'_> for $name<O> {
+            type SelfType = $native;
 
-            fn bytes_encode(item: &Self::EItem) -> Result<Cow<[u8]>, BoxedError> {
-                let mut buf = vec![0; size_of::<Self::EItem>()];
+            type ReturnBytes = [u8; size_of::<$native>()];
+
+            type Error = Infallible;
+
+            fn to_bytes(item: &Self::SelfType) -> Result<Self::ReturnBytes, Self::Error> {
+                let mut buf = [0; size_of::<$native>()];
                 O::$write_method(&mut buf, *item);
-                Ok(Cow::from(buf))
+                Ok(buf)
             }
         }
 
