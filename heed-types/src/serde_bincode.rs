@@ -16,7 +16,7 @@ where
 
     type Error = bincode::Error;
 
-    fn to_bytes(item: &'a Self::SelfType) -> Result<Self::ReturnBytes, Self::Error> {
+    fn to_bytes(item: &Self::SelfType) -> Result<Self::ReturnBytes, Self::Error> {
         bincode::serialize(item)
     }
 }

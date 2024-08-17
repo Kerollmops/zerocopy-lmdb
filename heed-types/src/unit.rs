@@ -13,7 +13,7 @@ impl ToBytes<'_> for Unit {
 
     type Error = Infallible;
 
-    fn to_bytes(_item: &'_ Self::SelfType) -> Result<Self::ReturnBytes, Self::Error> {
+    fn to_bytes(&(): &Self::SelfType) -> Result<Self::ReturnBytes, Self::Error> {
         Ok([])
     }
 }

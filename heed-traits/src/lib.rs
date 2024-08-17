@@ -9,27 +9,11 @@
 
 #![warn(missing_docs)]
 
-use std::borrow::Cow;
 use std::cmp::{Ord, Ordering};
 use std::error::Error as StdError;
-use std::fmt;
 
 /// A boxed `Send + Sync + 'static` error.
 pub type BoxedError = Box<dyn StdError + Send + Sync + 'static>;
-
-/// A trait that represents an encoding structure.
-#[deprecated = "replaced by `ToBytes` to allow for more optimization"]
-#[allow(deprecated)] // deprecated BoxedErrorWrapper is used in a bound
-pub trait BytesEncode<'a>:
-    // TODO are these bound needed?
-    ToBytes<'a, SelfType = Self::EItem, ReturnBytes = Cow<'a, [u8]>, Error = BoxedErrorWrapper>
-{
-    /// The type to encode.
-    type EItem: ?Sized + 'a;
-
-    /// Encode the given item as bytes.
-    fn bytes_encode(item: &'a Self::EItem) -> Result<Cow<'a, [u8]>, BoxedError>;
-}
 
 /// A trait that represents an encoding structure.
 pub trait ToBytes<'a> {
@@ -44,45 +28,15 @@ pub trait ToBytes<'a> {
 
     /// Encode the given item as bytes.
     fn to_bytes(item: &'a Self::SelfType) -> Result<Self::ReturnBytes, Self::Error>;
-}
 
-#[allow(deprecated)]
-impl<'a, T: BytesEncode<'a>> ToBytes<'a> for T {
-    type SelfType = <Self as BytesEncode<'a>>::EItem;
-
-    type ReturnBytes = Cow<'a, [u8]>;
-
-    type Error = BoxedErrorWrapper;
-
-    fn to_bytes(item: &'a Self::SelfType) -> Result<Self::ReturnBytes, Self::Error> {
-        Self::bytes_encode(item).map_err(BoxedErrorWrapper)
-    }
-}
-
-/// Wraps the [`BoxedError`] type alias because for complicated reasons it does not implement
-/// [`Error`][StdError]. This wrapper forwards [`Debug`][fmt::Debug], [`Display`][fmt::Display]
-/// and [`Error`][StdError] through the wrapper and the [`Box`].
-#[deprecated = "this wrapper was added for backwards compatibility of BytesEncode only"]
-pub struct BoxedErrorWrapper(BoxedError);
-
-#[allow(deprecated)]
-impl fmt::Debug for BoxedErrorWrapper {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        <BoxedError as fmt::Debug>::fmt(&self.0, f)
-    }
-}
-
-#[allow(deprecated)]
-impl fmt::Display for BoxedErrorWrapper {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        <BoxedError as fmt::Display>::fmt(&self.0, f)
-    }
-}
-
-#[allow(deprecated)]
-impl StdError for BoxedErrorWrapper {
-    fn source(&self) -> Option<&(dyn StdError + 'static)> {
-        self.0.source()
+    /// Encode the given item as bytes and write it into the writer. This function by default
+    /// forwards to `to_bytes`.
+    fn bytes_encode_into_writer(
+        item: &'a Self::SelfType,
+        writer: &mut Vec<u8>,
+    ) -> Result<(), Self::Error> {
+        writer.extend_from_slice(Self::to_bytes(item)?.as_ref());
+        Ok(())
     }
 }
 

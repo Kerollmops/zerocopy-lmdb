@@ -16,7 +16,7 @@ where
 
     type Error = serde_json::Error;
 
-    fn to_bytes(item: &'a Self::SelfType) -> Result<Self::ReturnBytes, Self::Error> {
+    fn to_bytes(item: &Self::SelfType) -> Result<Self::ReturnBytes, Self::Error> {
         serde_json::to_vec(item)
     }
 }
