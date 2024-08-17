@@ -92,7 +92,10 @@ pub use self::mdb::error::Error as MdbError;
 use self::mdb::ffi::{from_val, into_val};
 pub use self::mdb::flags::{DatabaseFlags, EnvFlags, PutFlags};
 pub use self::reserved_space::ReservedSpace;
-pub use self::traits::{BoxedError, BytesDecode, BytesEncode, Comparator, LexicographicComparator};
+#[allow(deprecated)] // re-exports BytesEncode
+pub use self::traits::{
+    BoxedError, BytesDecode, BytesEncode, Comparator, LexicographicComparator, ToBytes,
+};
 pub use self::txn::{RoTxn, RwTxn};
 
 /// The underlying LMDB library version information.
