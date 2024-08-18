@@ -11,6 +11,9 @@
 
 use std::cmp::{Ord, Ordering};
 use std::error::Error as StdError;
+use std::io;
+
+use either::Either;
 
 /// A boxed `Send + Sync + 'static` error.
 pub type BoxedError = Box<dyn StdError + Send + Sync + 'static>;
@@ -29,14 +32,25 @@ pub trait BytesEncode<'a> {
     /// Encode the given item as bytes.
     fn bytes_encode(item: &'a Self::EItem) -> Result<Self::ReturnBytes, Self::Error>;
 
-    /// Encode the given item as bytes and write it into the writer. This function by default
-    /// forwards to `bytes_encode`.
-    fn bytes_encode_into_writer(
+    /// Encode the given item as bytes and write it into the writer. Returns the amount of bytes
+    /// that were written. This function by default forwards to
+    /// [`bytes_encode`][BytesEncode::bytes_encode].
+    ///
+    /// # Errors
+    ///
+    /// [`Either`] is used to handle the 2 different errors this function can return.
+    /// [`Either::Left`] is used for errors from [`bytes_encode`][BytesEncode::bytes_encode] and
+    /// [`Either::Right`] is used for errors from the writer (I/O errors).
+    fn bytes_encode_into_writer<W: io::Write>(
         item: &'a Self::EItem,
-        writer: &mut Vec<u8>,
-    ) -> Result<(), Self::Error> {
-        writer.extend_from_slice(Self::bytes_encode(item)?.as_ref());
-        Ok(())
+        writer: &mut W,
+    ) -> Result<usize, Either<Self::Error, io::Error>> {
+        let bytes = Self::bytes_encode(item).map_err(Either::Left)?;
+        let bytes = bytes.as_ref();
+
+        writer.write_all(bytes).map_err(Either::Right)?;
+
+        Ok(bytes.len())
     }
 }
 

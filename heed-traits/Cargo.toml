@@ -9,3 +9,4 @@ readme = "../README.md"
 edition = "2021"
 
 [dependencies]
+either = "1.13.0"
