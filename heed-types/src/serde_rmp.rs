@@ -26,9 +26,9 @@ where
 
     fn bytes_encode_into_writer<W: std::io::Write>(
         item: &'a Self::EItem,
-        writer: &mut W,
+        mut writer: W,
     ) -> Result<(), BoxedError> {
-        rmp_serde::encode::write(writer, item)?;
+        rmp_serde::encode::write(&mut writer, item)?;
         Ok(())
     }
 }

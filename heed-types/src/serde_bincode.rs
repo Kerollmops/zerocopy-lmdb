@@ -26,7 +26,7 @@ where
 
     fn bytes_encode_into_writer<W: std::io::Write>(
         item: &'a Self::EItem,
-        writer: &mut W,
+        writer: W,
     ) -> Result<(), BoxedError> {
         bincode::serialize_into(writer, item)?;
         Ok(())

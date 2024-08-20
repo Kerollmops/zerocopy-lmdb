@@ -55,7 +55,7 @@ pub trait BytesEncode<'a> {
     /// The default implementation forwards to [`bytes_encode`][BytesEncode::bytes_encode].
     fn bytes_encode_into_writer<W: io::Write>(
         item: &'a Self::EItem,
-        writer: &mut W,
+        mut writer: W,
     ) -> Result<(), BoxedError> {
         let bytes = Self::bytes_encode(item)?;
 
