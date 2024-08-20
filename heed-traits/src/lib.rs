@@ -47,8 +47,7 @@ pub trait BytesEncode<'a> {
     /// Encode the given item as bytes.
     fn bytes_encode(item: &'a Self::EItem) -> Result<Self::ReturnBytes, Self::Error>;
 
-    /// Encode the given item as bytes and write it into the writer. Returns the amount of bytes
-    /// that were written.
+    /// Encode the given item as bytes and write it into the writer.
     ///
     /// When implementing this, also take a look at [`zero_copy`][BytesEncode::zero_copy]'s
     /// documentation.
@@ -57,13 +56,12 @@ pub trait BytesEncode<'a> {
     fn bytes_encode_into_writer<W: io::Write>(
         item: &'a Self::EItem,
         writer: &mut W,
-    ) -> Result<usize, BoxedError> {
+    ) -> Result<(), BoxedError> {
         let bytes = Self::bytes_encode(item)?;
-        let bytes = bytes.as_ref();
 
-        writer.write_all(bytes)?;
+        writer.write_all(bytes.as_ref())?;
 
-        Ok(bytes.len())
+        Ok(())
     }
 }
 

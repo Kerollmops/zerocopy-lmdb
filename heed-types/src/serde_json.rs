@@ -16,8 +16,20 @@ where
 
     type Error = serde_json::Error;
 
+    fn zero_copy(_item: &Self::EItem) -> bool {
+        false
+    }
+
     fn bytes_encode(item: &Self::EItem) -> Result<Self::ReturnBytes, Self::Error> {
         serde_json::to_vec(item)
+    }
+
+    fn bytes_encode_into_writer<W: std::io::Write>(
+        item: &'a Self::EItem,
+        writer: &mut W,
+    ) -> Result<(), BoxedError> {
+        serde_json::to_writer(writer, item)?;
+        Ok(())
     }
 }
 

@@ -16,8 +16,20 @@ where
 
     type Error = bincode::Error;
 
+    fn zero_copy(_item: &Self::EItem) -> bool {
+        false
+    }
+
     fn bytes_encode(item: &Self::EItem) -> Result<Self::ReturnBytes, Self::Error> {
         bincode::serialize(item)
+    }
+
+    fn bytes_encode_into_writer<W: std::io::Write>(
+        item: &'a Self::EItem,
+        writer: &mut W,
+    ) -> Result<(), BoxedError> {
+        bincode::serialize_into(writer, item)?;
+        Ok(())
     }
 }
 
