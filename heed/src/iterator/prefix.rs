@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::marker;
 
 use heed_traits::LexicographicComparator;
@@ -265,9 +264,9 @@ impl<'txn, KC, DC, C, IM> RwPrefix<'txn, KC, DC, C, IM> {
         KC: BytesEncode<'a>,
         DC: BytesEncode<'a>,
     {
-        let key_bytes: Cow<[u8]> = KC::bytes_encode(key).map_err(Error::Encoding)?;
-        let data_bytes: Cow<[u8]> = DC::bytes_encode(data).map_err(Error::Encoding)?;
-        self.cursor.put_current(&key_bytes, &data_bytes)
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let data_bytes = DC::bytes_encode(data).map_err(|err| Error::Encoding(Box::new(err)))?;
+        self.cursor.put_current(key_bytes.as_ref(), data_bytes.as_ref())
     }
 
     /// Write a new value to the current entry. The entry is written with the specified flags.
@@ -294,8 +293,13 @@ impl<'txn, KC, DC, C, IM> RwPrefix<'txn, KC, DC, C, IM> {
         KC: BytesEncode<'a>,
         F: FnOnce(&mut ReservedSpace) -> io::Result<()>,
     {
-        let key_bytes: Cow<[u8]> = KC::bytes_encode(key).map_err(Error::Encoding)?;
-        self.cursor.put_current_reserved_with_flags(flags, &key_bytes, data_size, write_func)
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        self.cursor.put_current_reserved_with_flags(
+            flags,
+            key_bytes.as_ref(),
+            data_size,
+            write_func,
+        )
     }
 
     /// Insert a key-value pair in this database. The entry is written with the specified flags and data codec.
@@ -325,9 +329,9 @@ impl<'txn, KC, DC, C, IM> RwPrefix<'txn, KC, DC, C, IM> {
         KC: BytesEncode<'a>,
         NDC: BytesEncode<'a>,
     {
-        let key_bytes: Cow<[u8]> = KC::bytes_encode(key).map_err(Error::Encoding)?;
-        let data_bytes: Cow<[u8]> = NDC::bytes_encode(data).map_err(Error::Encoding)?;
-        self.cursor.put_current_with_flags(flags, &key_bytes, &data_bytes)
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let data_bytes = NDC::bytes_encode(data).map_err(|err| Error::Encoding(Box::new(err)))?;
+        self.cursor.put_current_with_flags(flags, key_bytes.as_ref(), data_bytes.as_ref())
     }
 
     /// Move on the first value of keys, ignoring duplicate values.
@@ -655,9 +659,9 @@ impl<'txn, KC, DC, C, IM> RwRevPrefix<'txn, KC, DC, C, IM> {
         KC: BytesEncode<'a>,
         DC: BytesEncode<'a>,
     {
-        let key_bytes: Cow<[u8]> = KC::bytes_encode(key).map_err(Error::Encoding)?;
-        let data_bytes: Cow<[u8]> = DC::bytes_encode(data).map_err(Error::Encoding)?;
-        self.cursor.put_current(&key_bytes, &data_bytes)
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let data_bytes = DC::bytes_encode(data).map_err(|err| Error::Encoding(Box::new(err)))?;
+        self.cursor.put_current(key_bytes.as_ref(), data_bytes.as_ref())
     }
 
     /// Write a new value to the current entry. The entry is written with the specified flags.
@@ -684,8 +688,13 @@ impl<'txn, KC, DC, C, IM> RwRevPrefix<'txn, KC, DC, C, IM> {
         KC: BytesEncode<'a>,
         F: FnOnce(&mut ReservedSpace) -> io::Result<()>,
     {
-        let key_bytes: Cow<[u8]> = KC::bytes_encode(key).map_err(Error::Encoding)?;
-        self.cursor.put_current_reserved_with_flags(flags, &key_bytes, data_size, write_func)
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        self.cursor.put_current_reserved_with_flags(
+            flags,
+            key_bytes.as_ref(),
+            data_size,
+            write_func,
+        )
     }
 
     /// Insert a key-value pair in this database. The entry is written with the specified flags and data codec.
@@ -715,9 +724,9 @@ impl<'txn, KC, DC, C, IM> RwRevPrefix<'txn, KC, DC, C, IM> {
         KC: BytesEncode<'a>,
         NDC: BytesEncode<'a>,
     {
-        let key_bytes: Cow<[u8]> = KC::bytes_encode(key).map_err(Error::Encoding)?;
-        let data_bytes: Cow<[u8]> = NDC::bytes_encode(data).map_err(Error::Encoding)?;
-        self.cursor.put_current_with_flags(flags, &key_bytes, &data_bytes)
+        let key_bytes = KC::bytes_encode(key).map_err(|err| Error::Encoding(Box::new(err)))?;
+        let data_bytes = NDC::bytes_encode(data).map_err(|err| Error::Encoding(Box::new(err)))?;
+        self.cursor.put_current_with_flags(flags, key_bytes.as_ref(), data_bytes.as_ref())
     }
 
     /// Move on the first value of keys, ignoring duplicate values.
