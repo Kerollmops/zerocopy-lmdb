@@ -24,6 +24,7 @@ synchronoise = "1.0.1"
 
 [dev-dependencies]
 serde = { version = "1.0.203", features = ["derive"] }
+rayon = "1.10.0"
 tempfile = "3.10.1"
 
 [target.'cfg(windows)'.dependencies]
@@ -109,6 +110,11 @@ mdb_idl_logn_16 = ["lmdb-master-sys/mdb_idl_logn_16"]
 # example, if you are moving databases between Apple M1 and Apple Intel
 # computers then you need to keep your keys within the smaller 1982 byte limit.
 longer-keys = ["lmdb-master-sys/longer-keys"]
+
+[[example]]
+name = "nested-read-only"
+path = "../examples/nested-read-only.rs"
+required-features = ["read-txn-no-tls"]
 
 [[example]]
 name = "rmp-serde"
