@@ -84,6 +84,7 @@ impl<'e, T> RoTxn<'e, T> {
         Ok(RoTxn { txn: NonNull::new(txn), env: Cow::Owned(env), _tls_marker: PhantomData })
     }
 
+    #[cfg(not(master3))]
     pub(crate) fn nested<'p>(
         env: &'p Env<WithoutTls>,
         parent: &'p RwTxn,
