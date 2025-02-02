@@ -10,13 +10,14 @@ categories = ["database", "data-structures"]
 readme = "../README.md"
 edition = "2021"
 include = [
-  "../examples/all-types.rs",
-  "../examples/clear-database.rs",
-  "../examples/cursor-append.rs",
-  "../examples/custom-comparator.rs",
-  "../examples/multi-env.rs",
-  "../examples/nested.rs",
-  "../examples/rmp-serde.rs"
+    "../examples/all-types.rs",
+    "../examples/clear-database.rs",
+    "../examples/cursor-append.rs",
+    "../examples/custom-comparator.rs",
+    "../examples/multi-env.rs",
+    "../examples/nested.rs",
+    "../examples/nested-rtxns.rs",
+    "../examples/rmp-serde.rs",
 ]
 
 [dependencies]
@@ -32,6 +33,9 @@ serde = { version = "1.0.217", features = ["derive"], optional = true }
 synchronoise = "1.0.1"
 
 [dev-dependencies]
+rand = "0.9.0"
+rayon = "1.10.0"
+roaring = "0.10.10"
 serde = { version = "1.0.217", features = ["derive"] }
 tempfile = "3.15.0"
 
@@ -125,6 +129,10 @@ path = "../examples/custom-comparator.rs"
 [[example]]
 name = "multi-env"
 path = "../examples/multi-env.rs"
+
+[[example]]
+name = "nested-rtxns"
+path = "../examples/nested-rtxns.rs"
 
 [[example]]
 name = "nested"
